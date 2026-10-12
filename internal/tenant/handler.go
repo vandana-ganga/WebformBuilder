@@ -1,0 +1,100 @@
+package tenant
+
+import (
+	"net/http"
+
+	"github.com/labstack/echo/v4"
+)
+
+type CreateTenantRequest struct {
+	Name string `json:"name"`
+}
+
+type Handler struct {
+	Service *Service
+}
+
+func NewHandler(service *Service) *Handler {
+    return &Handler{
+        Service: service,
+    }
+}
+
+func (h *Handler)TenantCreate(c echo.Context,) error {
+	var req CreateTenantRequest
+
+	err := c.Bind(&req)
+
+	if err != nil {
+		return c.JSON(
+			http.StatusBadRequest,
+			map[string]string{
+				"error": "invalid request body",
+			},
+		)
+	}
+
+	tenant, err := h.Service.Create(
+		c.Request().Context(),
+		req.Name,
+	)
+
+	if err != nil {
+		return c.JSON(
+			http.StatusBadRequest,
+			map[string]string{
+				"error": err.Error(),
+			},
+		)
+	}
+
+	return c.JSON(
+		http.StatusCreated,
+		tenant,
+	)
+}
+
+func (h *Handler)TenantGetByID(c echo.Context,) error {
+
+	id := c.Param("id")
+
+	tenant, err := h.Service.GetByID(
+		c.Request().Context(),
+		id,
+	)
+
+	if err != nil {
+		return c.JSON( 
+			http.StatusNotFound,
+			map[string]string{
+				"error": "tenant not found",
+			},
+		)
+	}
+
+	return c.JSON(
+		http.StatusOK,
+		tenant,
+	)
+}
+
+func (h *Handler) ListTenants(c echo.Context,) error {
+
+	tenants, err := h.Service.List(
+		c.Request().Context(),
+	)
+
+	if err != nil {
+		return c.JSON(
+			http.StatusBadRequest,
+			map[string]string{
+				"error": "failed to get tenants",
+			},
+		)
+	}
+
+	return c.JSON(
+		http.StatusOK,
+		tenants,
+	)
+}
