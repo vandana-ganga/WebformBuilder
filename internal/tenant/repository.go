@@ -2,9 +2,13 @@ package tenant
 
 import (
 	"context"
+	"errors"
 
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
+
+var ErrEmailTaken = errors.New("email is already in use")
 
 type Repository struct {
 	DB *pgxpool.Pool
@@ -16,24 +20,33 @@ func NewRepository(db *pgxpool.Pool) *Repository {
     }
 }
 
-func (r *Repository)Create(ctx context.Context, name string,) (*Tenant, error) {
+func (r *Repository)Create(ctx context.Context, name string, email string, passwordHash string,) (*Tenant, error) {
     var tenant Tenant
 
 	query := `
-		INSERT INTO tenants (name)
-		VALUES ($1)
-		RETURNING id, name, created_at
+		INSERT INTO tenants (name, email, password_hash)
+		VALUES ($1, $2, $3)
+		RETURNING id, name, email, created_at
 	`
 
 	err := r.DB.QueryRow(
 		ctx,
 		query,
 		name,
+		email,
+		passwordHash,
 	).Scan(
 		&tenant.ID,
 		&tenant.Name,
+		&tenant.Email,
 		&tenant.CreatedAt,
 	)
+
+	var pgErr *pgconn.PgError
+
+	if errors.As(err, &pgErr) && pgErr.Code == "23505" {
+		return nil, ErrEmailTaken
+	}
 
 	if err != nil {
 		return nil, err
@@ -46,7 +59,7 @@ func (r *Repository) GetByID(ctx context.Context, id string,) (*Tenant, error) {
 	var tenant Tenant
 
 	query := `
-		SELECT id, name, created_at
+		SELECT id, name, COALESCE(email, ''), created_at
 		FROM tenants
 		WHERE id = $1
 	`
@@ -58,6 +71,7 @@ func (r *Repository) GetByID(ctx context.Context, id string,) (*Tenant, error) {
 	).Scan(
 		&tenant.ID,
 		&tenant.Name,
+		&tenant.Email,
 		&tenant.CreatedAt,
 	)
 
@@ -91,7 +105,7 @@ func (r *Repository) Count(ctx context.Context,) (int, error) {
 func (r *Repository) List(ctx context.Context, limit int, offset int,) ([]Tenant, error) {
 
 	query := `
-		SELECT id, name, created_at
+		SELECT id, name, COALESCE(email, ''), created_at
 		FROM tenants
 		ORDER BY created_at DESC, id
 		LIMIT $1
@@ -120,6 +134,7 @@ func (r *Repository) List(ctx context.Context, limit int, offset int,) ([]Tenant
 		err := rows.Scan(
 			&tenant.ID,
 			&tenant.Name,
+			&tenant.Email,
 			&tenant.CreatedAt,
 		)
 

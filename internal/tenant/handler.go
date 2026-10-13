@@ -8,7 +8,9 @@ import (
 )
 
 type CreateTenantRequest struct {
-	Name string `json:"name"`
+	Name     string `json:"name"`
+	Email    string `json:"email"`
+	Password string `json:"password"`
 }
 
 type Handler struct {
@@ -38,6 +40,8 @@ func (h *Handler)TenantCreate(c echo.Context,) error {
 	tenant, err := h.Service.Create(
 		c.Request().Context(),
 		req.Name,
+		req.Email,
+		req.Password,
 	)
 
 	if err != nil {

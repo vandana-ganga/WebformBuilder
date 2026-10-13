@@ -20,6 +20,13 @@ func main() {
 		)
 	}
 
+	if err := cfg.ValidateAuth(); err != nil {
+		log.Fatal(
+			"invalid auth config:",
+			err,
+		)
+	}
+
 	db, err := database.ConnectDB(
 		cfg.DatabaseURL,
 	)
@@ -66,6 +73,7 @@ func main() {
 		e,
 		db,
 		natsClient.JS,
+		cfg,
 	)
 
 	addr := ":" + cfg.Port

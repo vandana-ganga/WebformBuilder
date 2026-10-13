@@ -9,10 +9,6 @@ import (
 	"time"
 )
 
-// ValidationError is returned when submission data
-// does not match the published form schema.
-//
-// Fields maps a field name to its validation message.
 type ValidationError struct {
 	Fields map[string]string
 }
@@ -21,8 +17,6 @@ func (e *ValidationError) Error() string {
 	return "validation failed"
 }
 
-// formSchema is the part of the form version schema
-// used for validation.
 type formSchema struct {
 	Fields []schemaField `json:"fields"`
 }
@@ -33,10 +27,6 @@ type schemaField struct {
 	Required bool   `json:"required"`
 }
 
-// ValidateData validates submission data against a form version schema.
-//
-// It returns a *ValidationError when one or more fields are invalid.
-// A schema without fields is not validated.
 func ValidateData(schema any, data any) error {
 
 	schemaJSON, err := json.Marshal(schema)
@@ -89,7 +79,6 @@ func ValidateData(schema any, data any) error {
 		}
 	}
 
-	// Reject fields that are not part of the form.
 	for name := range values {
 		if !known[name] {
 			fieldErrors[name] = "is not a field of this form"
@@ -119,10 +108,6 @@ func isEmpty(value any) bool {
 	return false
 }
 
-// validateType returns a validation message,
-// or an empty string when the value is valid.
-//
-// Unknown field types are not type-checked.
 func validateType(fieldType string, value any) string {
 
 	switch strings.ToLower(fieldType) {
@@ -184,7 +169,6 @@ func isEmail(value string) bool {
 
 	address, err := mail.ParseAddress(value)
 
-	// ParseAddress also accepts "Name <user@example.com>".
 	if err != nil || address.Address != value {
 		return false
 	}

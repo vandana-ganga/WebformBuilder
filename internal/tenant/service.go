@@ -3,7 +3,10 @@ package tenant
 import (
 	"context"
 	"errors"
+	"net/mail"
 	"strings"
+
+	"webform-builder/internal/auth"
 )
 
 type Service struct {
@@ -16,7 +19,7 @@ func NewService(repo *Repository) *Service {
     }
 }
 
-func (s *Service) Create(ctx context.Context, name string,) (*Tenant, error) {
+func (s *Service) Create(ctx context.Context, name string, email string, password string,) (*Tenant, error) {
     name = strings.TrimSpace(name)
 
 	if name == "" {
@@ -30,9 +33,31 @@ func (s *Service) Create(ctx context.Context, name string,) (*Tenant, error) {
 			"tenant name is too long",
 		)
 	}
+
+	email = strings.ToLower(strings.TrimSpace(email))
+
+	if email == "" {
+		return nil, errors.New(
+			"tenant email is required",
+		)
+	}
+
+	if addr, err := mail.ParseAddress(email); err != nil || addr.Address != email || len(email) > 255 {
+		return nil, errors.New(
+			"tenant email is invalid",
+		)
+	}
+
+	passwordHash, err := auth.HashPassword(password)
+	if err != nil {
+		return nil, err
+	}
+
 	return s.Repo.Create(
 		ctx,
 		name,
+		email,
+		passwordHash,
 	)
 }
 
