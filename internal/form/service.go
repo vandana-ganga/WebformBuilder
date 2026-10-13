@@ -39,7 +39,7 @@ func (s *Service)CreateForm(ctx context.Context, tenantID string, name string,) 
 	)
 }
 
-func (s *Service) GetFormById(ctx context.Context, id string,) (*Form, error) {
+func (s *Service) GetFormByID(ctx context.Context, id string,) (*Form, error) {
 	id = strings.TrimSpace(id)
 	if id == "" {
 		return nil, errors.New("form ID is required")
@@ -52,17 +52,70 @@ func (s *Service) GetFormById(ctx context.Context, id string,) (*Form, error) {
 }
 
 
-func (s *Service) ListForms(ctx context.Context, tenantID string,) ([]Form, error) {
+func (s *Service) GetFormDetail(ctx context.Context, id string,) (*FormDetail, error) {
+	form, err := s.GetFormByID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+
+	versionIDs, err := s.Repo.ListFormVersionIDs(
+		ctx,
+		form.ID,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	return &FormDetail{
+		Form:         *form,
+		VersionCount: len(versionIDs),
+		VersionIDs:   versionIDs,
+	}, nil
+}
+
+func (s *Service) ListFormsByTenant(ctx context.Context, tenantID string, page int, limit int,) (*FormList, error) {
 	tenantID = strings.TrimSpace(tenantID)
 
 	if tenantID == "" {
 		return nil, errors.New("tenant ID is required")
 	}
 
-	return s.Repo.ListFormsByTenant(
+	if page <= 0 {
+		page = 1
+	}
+
+	if limit <= 0 {
+		limit = 20
+	}
+
+	if limit > 100 {
+		limit = 100
+	}
+
+	total, err := s.Repo.CountFormsByTenant(
 		ctx,
 		tenantID,
 	)
+	if err != nil {
+		return nil, err
+	}
+
+	forms, err := s.Repo.ListFormsByTenant(
+		ctx,
+		tenantID,
+		limit,
+		(page-1)*limit,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	return &FormList{
+		Forms: forms,
+		Page:  page,
+		Limit: limit,
+		Total: total,
+	}, nil
 }
 
 func (s *Service) CreateFormVersion(ctx context.Context, formID string, schema any,) (*FormVersion, error) {
@@ -85,7 +138,7 @@ func (s *Service) CreateFormVersion(ctx context.Context, formID string, schema a
 }
 
 
-func (s *Service) ListFormVersions(ctx context.Context, formID string,) ([]FormVersion, error) {
+func (s *Service) ListFormVersions(ctx context.Context, formID string, page int, limit int,) (*FormVersionList, error) {
 
 	formID = strings.TrimSpace(formID)
 
@@ -93,10 +146,42 @@ func (s *Service) ListFormVersions(ctx context.Context, formID string,) ([]FormV
 		return nil, errors.New("form ID is required")
 	}
 
-	return s.Repo.ListFormVersions(
+	if page <= 0 {
+		page = 1
+	}
+
+	if limit <= 0 {
+		limit = 20
+	}
+
+	if limit > 100 {
+		limit = 100
+	}
+
+	total, err := s.Repo.CountFormVersions(
 		ctx,
 		formID,
 	)
+	if err != nil {
+		return nil, err
+	}
+
+	versions, err := s.Repo.ListFormVersions(
+		ctx,
+		formID,
+		limit,
+		(page-1)*limit,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	return &FormVersionList{
+		Versions: versions,
+		Page:     page,
+		Limit:    limit,
+		Total:    total,
+	}, nil
 }
 
 

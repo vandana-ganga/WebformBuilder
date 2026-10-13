@@ -2,6 +2,7 @@ package form
 
 import (
 	"net/http"
+	"strconv"
 
 	"github.com/labstack/echo/v4"
 )
@@ -53,13 +54,73 @@ func (h *Handler)CreateForm(c echo.Context) error {
 	)
 }
 
-func (h *Handler)ListForms(c echo.Context) error {
+func (h *Handler) GetFormByID(c echo.Context) error {
+	ctx := c.Request().Context()
+
+	id := c.Param("id")
+
+	if id == "" {
+		return c.JSON(http.StatusBadRequest, map[string]any{
+			"error": "form ID is required",
+		})
+	}
+
+	form, err := h.Service.GetFormDetail(ctx, id)
+	if err != nil {
+		return c.JSON(http.StatusNotFound, map[string]any{
+			"error": "form not found",
+		})
+	}
+
+	return c.JSON(http.StatusOK, map[string]any{
+		"form": form,
+	})
+}
+
+func (h *Handler)ListFormsByTenant(c echo.Context) error {
 
 	tenantID := c.Param("tenant_id")
 
-	forms, err := h.Service.ListForms(
+	page := 1
+	limit := 20
+
+	if value := c.QueryParam("limit"); value != "" {
+
+		parsed, err := strconv.Atoi(value)
+
+		if err != nil {
+			return c.JSON(
+				http.StatusBadRequest,
+				map[string]string{
+					"error": "invalid limit",
+				},
+			)
+		}
+
+		limit = parsed
+	}
+
+	if value := c.QueryParam("page"); value != "" {
+
+		parsed, err := strconv.Atoi(value)
+
+		if err != nil {
+			return c.JSON(
+				http.StatusBadRequest,
+				map[string]string{
+					"error": "invalid page",
+				},
+			)
+		}
+
+		page = parsed
+	}
+
+	forms, err := h.Service.ListFormsByTenant(
 		c.Request().Context(),
 		tenantID,
+		page,
+		limit,
 	)
 
 	if err != nil {
@@ -122,9 +183,46 @@ func (h *Handler) ListFormVersions(c echo.Context) error {
 
 	formID := c.Param("id")
 
+	page := 1
+	limit := 20
+
+	if value := c.QueryParam("limit"); value != "" {
+
+		parsed, err := strconv.Atoi(value)
+
+		if err != nil {
+			return c.JSON(
+				http.StatusBadRequest,
+				map[string]string{
+					"error": "invalid limit",
+				},
+			)
+		}
+
+		limit = parsed
+	}
+
+	if value := c.QueryParam("page"); value != "" {
+
+		parsed, err := strconv.Atoi(value)
+
+		if err != nil {
+			return c.JSON(
+				http.StatusBadRequest,
+				map[string]string{
+					"error": "invalid page",
+				},
+			)
+		}
+
+		page = parsed
+	}
+
 	versions, err := h.Service.ListFormVersions(
 		c.Request().Context(),
 		formID,
+		page,
+		limit,
 	)
 
 	if err != nil {

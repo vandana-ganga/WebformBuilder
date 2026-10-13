@@ -11,6 +11,26 @@ type Form struct {
 	UpdatedAt time.Time `json:"updated_at"`
 }
 
+type FormDetail struct {
+	Form
+	VersionCount int      `json:"version_count"`
+	VersionIDs   []string `json:"version_ids"`
+}
+
+type FormList struct {
+	Forms []Form `json:"forms"`
+	Page  int    `json:"page"`
+	Limit int    `json:"limit"`
+	Total int    `json:"total"`
+}
+
+type FormVersionList struct {
+	Versions []FormVersion `json:"versions"`
+	Page     int           `json:"page"`
+	Limit    int           `json:"limit"`
+	Total    int           `json:"total"`
+}
+
 type FormVersion struct {
 	ID            string     `json:"id"`
 	FormID        string     `json:"form_id"`

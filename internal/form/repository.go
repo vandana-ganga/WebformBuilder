@@ -89,7 +89,7 @@ func (r *Repository)GetFormByID(ctx context.Context, id string,) (*Form, error) 
 	return &form, nil
 }
 
-func (r *Repository)ListFormsByTenant(ctx context.Context, tenantID string,) ([]Form, error) {
+func (r *Repository)ListFormsByTenant(ctx context.Context, tenantID string, limit int, offset int,) ([]Form, error) {
 	query := `
 		SELECT
 			id,
@@ -100,12 +100,16 @@ func (r *Repository)ListFormsByTenant(ctx context.Context, tenantID string,) ([]
 			updated_at
 		FROM forms
 		WHERE tenant_id = $1
-		ORDER BY created_at DESC
+		ORDER BY created_at DESC, id DESC
+		LIMIT $2
+		OFFSET $3
 	`
 	rows, err := r.DB.Query(
 		ctx,
 		query,
 		tenantID,
+		limit,
+		offset,
 	)
 
 	if err != nil {
@@ -150,6 +154,52 @@ func (r *Repository)ListFormsByTenant(ctx context.Context, tenantID string,) ([]
 	}
 
 	return forms, nil
+}
+
+func (r *Repository)CountFormsByTenant(ctx context.Context, tenantID string,) (int, error) {
+	var total int
+
+	err := r.DB.QueryRow(
+		ctx,
+		`
+		SELECT COUNT(*)
+		FROM forms
+		WHERE tenant_id = $1
+		`,
+		tenantID,
+	).Scan(&total)
+
+	if err != nil {
+		return 0, fmt.Errorf(
+			"failed to count forms: %w",
+			err,
+		)
+	}
+
+	return total, nil
+}
+
+func (r *Repository)CountFormVersions(ctx context.Context, formID string,) (int, error) {
+	var total int
+
+	err := r.DB.QueryRow(
+		ctx,
+		`
+		SELECT COUNT(*)
+		FROM form_versions
+		WHERE form_id = $1
+		`,
+		formID,
+	).Scan(&total)
+
+	if err != nil {
+		return 0, fmt.Errorf(
+			"failed to count versions: %w",
+			err,
+		)
+	}
+
+	return total, nil
 }
 
 func (r *Repository)CreateFormVersion(ctx context.Context, formID string, schema any,) (*FormVersion, error) {
@@ -280,7 +330,7 @@ func (r *Repository)CreateFormVersion(ctx context.Context, formID string, schema
 	return &version, nil
 }
 
-func (r *Repository)ListFormVersions(ctx context.Context, formID string, ) ([]FormVersion, error) {
+func (r *Repository)ListFormVersions(ctx context.Context, formID string, limit int, offset int,) ([]FormVersion, error) {
 	query := `
 		SELECT
 			id,
@@ -292,12 +342,16 @@ func (r *Repository)ListFormVersions(ctx context.Context, formID string, ) ([]Fo
 		FROM form_versions
 		WHERE form_id = $1
 		ORDER BY version_number DESC
+		LIMIT $2
+		OFFSET $3
 	`
 
 	rows, err := r.DB.Query(
 		ctx,
 		query,
 		formID,
+		limit,
+		offset,
 	)
 
 	if err != nil {
@@ -356,6 +410,54 @@ func (r *Repository)ListFormVersions(ctx context.Context, formID string, ) ([]Fo
 	}
 
 	return versions, nil
+}
+
+func (r *Repository)ListFormVersionIDs(ctx context.Context, formID string,) ([]string, error) {
+	query := `
+		SELECT id
+		FROM form_versions
+		WHERE form_id = $1
+		ORDER BY version_number DESC
+	`
+
+	rows, err := r.DB.Query(
+		ctx,
+		query,
+		formID,
+	)
+
+	if err != nil {
+		return nil, fmt.Errorf(
+			"failed to list version IDs: %w",
+			err,
+		)
+	}
+	defer rows.Close()
+
+	ids := make([]string, 0)
+
+	for rows.Next() {
+
+		var id string
+
+		if err := rows.Scan(&id); err != nil {
+			return nil, fmt.Errorf(
+				"failed to scan version ID: %w",
+				err,
+			)
+		}
+
+		ids = append(ids, id)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf(
+			"failed to iterate version IDs: %w",
+			err,
+		)
+	}
+
+	return ids, nil
 }
 
 func (r *Repository)GetFormVersionByID(ctx context.Context, versionID string,) (*FormVersion, error) {

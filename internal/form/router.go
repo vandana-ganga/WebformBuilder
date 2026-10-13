@@ -14,7 +14,9 @@ func RegisterRoutes(
 	handler := NewHandler(service)
 
 	e.POST("/api/tenants/:tenant_id/forms", handler.CreateForm,)
-	e.GET("/api/tenants/:tenant_id/forms", handler.ListForms,)
+	e.GET("/api/forms/:id", handler.GetFormByID,)
+	e.GET("/api/tenants/:tenant_id/forms", handler.ListFormsByTenant,)
+
 	e.POST("/api/forms/:id/versions", handler.CreateFormVersion,)
 	e.GET("/api/forms/:id/versions", handler.ListFormVersions,)
 	e.POST("/api/forms/:id/versions/:version_id/publish", handler.PublishFormVersion,)
