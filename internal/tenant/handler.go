@@ -2,6 +2,7 @@ package tenant
 
 import (
 	"net/http"
+	"strconv"
 
 	"github.com/labstack/echo/v4"
 )
@@ -80,8 +81,45 @@ func (h *Handler)TenantGetByID(c echo.Context,) error {
 
 func (h *Handler) ListTenants(c echo.Context,) error {
 
+	page := 1
+	limit := 20
+
+	if value := c.QueryParam("limit"); value != "" {
+
+		parsed, err := strconv.Atoi(value)
+
+		if err != nil {
+			return c.JSON(
+				http.StatusBadRequest,
+				map[string]string{
+					"error": "invalid limit",
+				},
+			)
+		}
+
+		limit = parsed
+	}
+
+	if value := c.QueryParam("page"); value != "" {
+
+		parsed, err := strconv.Atoi(value)
+
+		if err != nil {
+			return c.JSON(
+				http.StatusBadRequest,
+				map[string]string{
+					"error": "invalid page",
+				},
+			)
+		}
+
+		page = parsed
+	}
+
 	tenants, err := h.Service.List(
 		c.Request().Context(),
+		page,
+		limit,
 	)
 
 	if err != nil {

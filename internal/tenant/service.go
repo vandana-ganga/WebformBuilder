@@ -48,7 +48,38 @@ func (s *Service) GetByID(ctx context.Context, id string,) (*Tenant, error) {
 	)
 }
 
-func (s *Service) List(ctx context.Context,) ([]Tenant, error) {
+func (s *Service) List(ctx context.Context, page int, limit int,) (*TenantList, error) {
 
-	return s.Repo.List(ctx)
+	if page <= 0 {
+		page = 1
+	}
+
+	if limit <= 0 {
+		limit = 20
+	}
+
+	if limit > 100 {
+		limit = 100
+	}
+
+	total, err := s.Repo.Count(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	tenants, err := s.Repo.List(
+		ctx,
+		limit,
+		(page-1)*limit,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	return &TenantList{
+		Tenants: tenants,
+		Page:    page,
+		Limit:   limit,
+		Total:   total,
+	}, nil
 }

@@ -16,7 +16,7 @@ func NewRepository(db *pgxpool.Pool) *Repository {
     }
 }
 
-func (r *Repository) Create(ctx context.Context, name string,) (*Tenant, error) {
+func (r *Repository)Create(ctx context.Context, name string,) (*Tenant, error) {
     var tenant Tenant
 
 	query := `
@@ -68,17 +68,41 @@ func (r *Repository) GetByID(ctx context.Context, id string,) (*Tenant, error) {
 	return &tenant, nil
 }
 
-func (r *Repository) List(ctx context.Context,) ([]Tenant, error) {
+func (r *Repository) Count(ctx context.Context,) (int, error) {
+	var total int
+
+	query := `
+		SELECT COUNT(*)
+		FROM tenants
+	`
+
+	err := r.DB.QueryRow(
+		ctx,
+		query,
+	).Scan(&total)
+
+	if err != nil {
+		return 0, err
+	}
+
+	return total, nil
+}
+
+func (r *Repository) List(ctx context.Context, limit int, offset int,) ([]Tenant, error) {
 
 	query := `
 		SELECT id, name, created_at
 		FROM tenants
-		ORDER BY created_at DESC
+		ORDER BY created_at DESC, id
+		LIMIT $1
+		OFFSET $2
 	`
 
 	rows, err := r.DB.Query(
 		ctx,
 		query,
+		limit,
+		offset,
 	)
 
 	if err != nil {
@@ -87,7 +111,7 @@ func (r *Repository) List(ctx context.Context,) ([]Tenant, error) {
 
 	defer rows.Close()
 
-	var tenants []Tenant
+	tenants := make([]Tenant, 0)
 
 	for rows.Next() {
 
