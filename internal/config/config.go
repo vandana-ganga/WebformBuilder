@@ -22,8 +22,9 @@ type Config struct {
 
 func Load() (*Config, error) {
 
+	// .env is optional: in Docker the settings come from the environment.
 	err := godotenv.Load()
-	if err != nil {
+	if err != nil && !errors.Is(err, os.ErrNotExist) {
 		return nil, err
 	}
 

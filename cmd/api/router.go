@@ -1,6 +1,8 @@
 package main
 
 import (
+	"net/http"
+
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/labstack/echo/v4"
 	"github.com/nats-io/nats.go"
@@ -18,6 +20,16 @@ func RegisterRoutes(
 	js nats.JetStreamContext,
 	cfg *config.Config,
 ) {
+
+	// Used by the Docker and nginx health checks.
+	e.GET("/healthz", func(c echo.Context) error {
+		return c.JSON(
+			http.StatusOK,
+			map[string]string{
+				"status": "ok",
+			},
+		)
+	})
 
 	tokens := auth.NewTokenManager(cfg.JWTSecret, cfg.JWTExpiry)
 	authMW := auth.NewMiddleware(tokens)
