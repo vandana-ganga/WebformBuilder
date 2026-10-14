@@ -14,9 +14,9 @@ The short version:
 
 Public submissions go through a durable buffer before they reach the database:
 
-```text
+
 Public API  ->  NATS JetStream  ->  Submission workers  ->  PostgreSQL
-```
+
 
 The public submission endpoint is the part of the system most likely to see sudden bursts, and I did not want every request to wait on PostgreSQL. JetStream persists each message, requires an explicit acknowledgement, redelivers anything that was not acknowledged, and can replay a stream. It also has a good Go client and is simple to run. The worker ACKs a message only after the submission has been written to PostgreSQL, so a crash mid-processing leads to a redelivery, not a lost submission.
 
@@ -32,12 +32,12 @@ The public submission endpoint is the part of the system most likely to see sudd
 
 Form schemas and submission payloads vary per form, but everything around them is relational:
 
-```text
+
 Tenant
   +-- Form
        +-- Form version
               +-- Submission
-```
+
 
 So the structure lives in ordinary tables (`tenants`, `forms`, `form_versions`, `submissions`), and only the parts that vary are stored as JSONB: `form_versions.schema` and `submissions.data`.
 

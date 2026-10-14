@@ -50,6 +50,6 @@ func RegisterRoutes(
 	)
 
 	e.POST("/public/forms/:id/submissions", handler.SubmitForm)
-	e.GET("/api/submissions/:id", handler.GetSubmissionByID, submissionAccess, tenantAccess,)
-	e.GET("/api/forms/:id/submissions", handler.ListSubmissionsByForm, formAccess, tenantAccess,)
+	e.GET("/api/submissions/:id", handler.GetSubmissionByID, submissionAccess)
+	e.GET("/api/forms/:id/submissions", handler.ListSubmissionsByForm, formAccess)
 }
