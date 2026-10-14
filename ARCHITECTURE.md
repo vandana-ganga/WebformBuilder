@@ -15,7 +15,7 @@ The working code covers the core path: create a form, publish it, submit to it p
 
 ## 2. System layout
 
-```text
+
                            INTERNET
                               |
                               v
@@ -49,7 +49,7 @@ The working code covers the core path: create a form, publish it, submit to it p
           +-----------------------------| Submission    |
                                         | workers       |
                                         +---------------+
-```
+
 
 ### Components
 
@@ -69,12 +69,12 @@ The working code covers the core path: create a form, publish it, submit to it p
 
 ### Creating and publishing a form
 
-```text
+
 POST /api/tenants                                          -> tenant
 POST /api/forms                                            -> draft form
 POST /api/forms/{id}/versions                              -> version 1
 POST /api/forms/{id}/versions/{version_id}/publish         -> version 1 is published
-```
+
 
 A form and its versions are separate entities. Saving a new schema never overwrites an old one; it creates a new immutable version.
 
@@ -84,7 +84,7 @@ A form and its versions are separate entities. Saving a new schema never overwri
 
 ### Submitting
 
-```text
+
 Visitor
    |  POST /public/forms/{id}/submissions
    v
@@ -102,7 +102,7 @@ Submission worker
 PostgreSQL INSERT
    v
 ACK the JetStream message
-```
+
 
 The API returns `202 Accepted` once JetStream has durably stored the event. The submission becomes queryable shortly after, when a worker has written it to PostgreSQL.
 
@@ -178,12 +178,12 @@ Validation happens on the server. The API loads the published schema and checks 
 
 Version immutability is the most important correctness property in the system.
 
-```text
+
 Form
  +-- Version 1  (schema A)
  +-- Version 2  (schema B)
  +-- Version 3  (schema C)
-```
+
 
 Each submission stores the `form_version_id` it was validated against. If version 3 is published today, a submission made under version 1 still points to version 1. The invariant is:
 
@@ -312,25 +312,25 @@ The current slice passes tenant IDs explicitly to keep things simple. Production
 
 **Which endpoints need authentication.** The admin endpoints should require it:
 
-```text
+
 POST /api/forms
 POST /api/forms/{id}/versions
 POST /api/forms/{id}/versions/{version_id}/publish
 GET  /api/forms/{id}/submissions
-```
+
 
 The public endpoints do not, but they need abuse protection instead:
 
-```text
+
 GET  /public/forms/{id}
 POST /public/forms/{id}/submissions
-```
+
 
 **XSS.** Form labels, descriptions, option labels, and submitted values all come from users. Anything that renders them must escape HTML, and user-controlled values must never be injected through unsafe template operations.
 
 **SQL injection.** Every query is parameterized. No user input is concatenated into SQL.
 
-```go
+
 query := `
     SELECT id, name
     FROM forms
@@ -338,7 +338,7 @@ query := `
 `
 
 db.QueryRow(ctx, query, formID)
-```
+
 
 **Payload limits.** The server should cap the request body size, the number of fields, field name length, string length, and schema size, so that an oversized payload is rejected early.
 
